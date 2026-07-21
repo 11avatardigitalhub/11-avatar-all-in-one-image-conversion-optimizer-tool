@@ -1,1093 +1,851 @@
-        document.addEventListener('DOMContentLoaded', function() {
-            // DOM Elements
-            const dropArea = document.getElementById('dropArea');
-            const fileInput = document.getElementById('fileInput');
-            const selectFilesBtn = document.getElementById('selectFilesBtn');
-            const fileCounter = document.getElementById('fileCounter');
-            const outputFormat = document.getElementById('outputFormat');
-            const searchInput = document.getElementById('searchInput');
-            const processBtn = document.getElementById('processBtn');
-            const imagesTable = document.getElementById('imagesTable');
-            const tableBody = document.getElementById('tableBody');
-            const clearAllBtn = document.getElementById('clearAllBtn');
-            const downloadAllBtn = document.getElementById('downloadAllBtn');
-            const shareAllBtn = document.getElementById('shareAllBtn');
-            const batchActions = document.getElementById('batchActions');
-            const limitNotice = document.getElementById('limitNotice');
-            const closeNotice = document.getElementById('closeNotice');
-            const toggleAdvanced = document.getElementById('toggleAdvanced');
-            const advancedOptions = document.getElementById('advancedOptions');
-            const qualitySlider = document.getElementById('quality');
-            const qualityValue = document.getElementById('qualityValue');
-            const resizeMode = document.getElementById('resizeMode');
-            const resizeValue = document.getElementById('resizeValue');
-            const dimensionsContainer = document.getElementById('dimensionsContainer');
-            const resizeWidth = document.getElementById('resizeWidth');
-            const resizeHeight = document.getElementById('resizeHeight');
-            const previewContainer = document.getElementById('previewContainer');
-            const originalPreview = document.getElementById('originalPreview');
-            const enhancedPreview = document.getElementById('enhancedPreview');
-            const sizeReduction = document.getElementById('sizeReduction');
-            const qualityDiff = document.getElementById('qualityDiff');
-            const timeSaved = document.getElementById('timeSaved');
-            const compressionSlider = document.getElementById('compression');
-            const compressionValue = document.getElementById('compressionValue');
-            const watermarkCheckbox = document.getElementById('watermark');
-            const watermarkOptions = document.getElementById('watermarkOptions');
-            const watermarkText = document.getElementById('watermarkText');
-            const watermarkPosition = document.getElementById('watermarkPosition');
-            const watermarkColor = document.getElementById('watermarkColor');
-            const watermarkBgColor = document.getElementById('watermarkBgColor');
-            const watermarkSize = document.getElementById('watermarkSize');
-            const watermarkPreview = document.getElementById('watermarkPreview');
-            const watermarkPreviewCanvas = document.getElementById('watermarkPreviewCanvas');
-            const toast = document.getElementById('toast');
-            const toastMessage = document.getElementById('toastMessage');
-            const privacyNotice = document.getElementById('privacyNotice');
-            const closePrivacyNotice = document.getElementById('closePrivacyNotice');
-            const acceptPrivacyBtn = document.getElementById('acceptPrivacyBtn');
-            const learnMoreBtn = document.getElementById('learnMoreBtn');
-            const usersCount = document.getElementById('usersCount');
-            const imagesCount = document.getElementById('imagesCount');
-            const rotationSelect = document.getElementById('rotation');
-            const batchRenameInput = document.getElementById('batchRename');
-            const darkModeToggle = document.getElementById('darkModeToggle');
-            const imageFilter = document.getElementById('imageFilter');
-            const totalFilesStat = document.getElementById('totalFilesStat');
-            const totalSizeStat = document.getElementById('totalSizeStat');
-            const estimatedTimeStat = document.getElementById('estimatedTimeStat');
+// ============================================================
+// THEME SYSTEM - White, Gold & Black Theme Manager
+// ============================================================
 
-            // State variables
-            let files = [];
-            let processedFiles = [];
-            let thumbnailUrls = {};
-            const MAX_FILES = 10;
-            let privacyNoticeAccepted = localStorage.getItem('privacyNoticeAccepted') === 'true';
+class ThemeManager {
+  constructor() {
+    this.currentTheme = this.getStoredTheme() || 'white';
+    this.availableThemes = {
+      white: { 
+        name: 'White', 
+        icon: 'fa-sun', 
+        color: '#f5f7fa',
+        label: 'Light' 
+      },
+      gold: { 
+        name: 'Gold', 
+        icon: 'fa-crown', 
+        color: '#d4a017',
+        label: 'Gold' 
+      },
+      dark: { 
+        name: 'Dark', 
+        icon: 'fa-moon', 
+        color: '#0a0a0a',
+        label: 'Dark' 
+      }
+    };
+  }
 
-            // Initialize counters with starting values
-            let processedImagesCount = 98902;
-            let happyUsersCount = 1093;
+  getStoredTheme() {
+    try {
+      return localStorage.getItem('image-converter-theme') || 'white';
+    } catch {
+      return 'white';
+    }
+  }
 
-            // Initialize resize functionality
-            function initResizeFunctionality() {
-                // Set initial state
-                updateResizeFields();
-                
-                // Add event listener for resize mode change
-                resizeMode.addEventListener('change', updateResizeFields);
-            }
-
-            function updateResizeFields() {
-                const mode = resizeMode.value;
-                
-                // Reset all fields
-                resizeValue.disabled = true;
-                resizeWidth.disabled = true;
-                resizeHeight.disabled = true;
-                dimensionsContainer.style.display = 'none';
-                
-                // Enable appropriate fields based on mode
-                if (mode === 'percentage') {
-                    resizeValue.disabled = false;
-                    resizeValue.placeholder = 'Percentage (e.g. 50)';
-                } else if (mode === 'dimensions') {
-                    dimensionsContainer.style.display = 'flex';
-                    resizeWidth.disabled = false;
-                    resizeHeight.disabled = false;
-                }
-            }
-
-            // Dark mode functionality
-            function toggleDarkMode() {
-                document.body.classList.toggle('dark-mode', darkModeToggle.checked);
-                localStorage.setItem('darkMode', darkModeToggle.checked);
-            }
-
-            function applyDarkModePreference() {
-                const darkModeEnabled = localStorage.getItem('darkMode') === 'true';
-                darkModeToggle.checked = darkModeEnabled;
-                document.body.classList.toggle('dark-mode', darkModeEnabled);
-            }
-
-            // Batch rename functionality
-            function generateNewFileName(originalName, pattern, index) {
-                const extension = originalName.split('.').pop();
-                let newName = pattern;
-                
-                // Replace placeholders
-                newName = newName.replace(/{num}/g, (index + 1).toString().padStart(2, '0'));
-                newName = newName.replace(/{date}/g, new Date().toISOString().split('T')[0]);
-                newName = newName.replace(/{time}/g, new Date().toTimeString().split(' ')[0].replace(/:/g, '-'));
-                
-                return `${newName}.${extension}`;
-            }
-
-            function updateFileNamesPreview() {
-                const pattern = batchRenameInput.value;
-                if (!pattern) return;
-                
-                files.forEach((file, index) => {
-                    const newName = generateNewFileName(file.name, pattern, index);
-                    const row = tableBody.querySelector(`tr[data-index="${index}"]`);
-                    if (row) {
-                        const fileNameElement = row.querySelector('.file-name');
-                        if (fileNameElement) {
-                            fileNameElement.textContent = newName;
-                            fileNameElement.title = `Will be renamed to: ${newName}`;
-                            fileNameElement.style.color = '#6c5ce7';
-                            fileNameElement.style.fontWeight = 'bold';
-                        }
-                    }
-                });
-            }
-
-            // Image processing functions
-            function applyRotation(canvas, degrees) {
-                if (degrees === 0) return canvas;
-                
-                const rotatedCanvas = document.createElement('canvas');
-                const ctx = rotatedCanvas.getContext('2d');
-                
-                if (degrees === 90 || degrees === 270) {
-                    rotatedCanvas.width = canvas.height;
-                    rotatedCanvas.height = canvas.width;
-                } else {
-                    rotatedCanvas.width = canvas.width;
-                    rotatedCanvas.height = canvas.height;
-                }
-                
-                ctx.translate(rotatedCanvas.width / 2, rotatedCanvas.height / 2);
-                ctx.rotate(degrees * Math.PI / 180);
-                ctx.drawImage(canvas, -canvas.width / 2, -canvas.height / 2);
-                
-                return rotatedCanvas;
-            }
-
-            function applyFilter(canvas, filter) {
-                const ctx = canvas.getContext('2d');
-                ctx.filter = getFilterValue(filter);
-                ctx.drawImage(canvas, 0, 0);
-                ctx.filter = 'none';
-                return canvas;
-            }
-
-            function getFilterValue(filter) {
-                switch(filter) {
-                    case 'grayscale': return 'grayscale(100%)';
-                    case 'sepia': return 'sepia(100%)';
-                    case 'vintage': return 'sepia(70%) brightness(80%) contrast(120%)';
-                    case 'invert': return 'invert(100%)';
-                    case 'blur': return 'blur(2px)';
-                    case 'sharpen': return 'contrast(150%) brightness(105%)';
-                    default: return 'none';
-                }
-            }
-
-            // Real-time stats
-            function updateRealTimeStats() {
-                if (files.length === 0) return;
-                
-                // Update file count
-                totalFilesStat.textContent = files.length;
-                
-                // Calculate total size
-                const totalSize = files.reduce((sum, file) => sum + file.size, 0);
-                totalSizeStat.textContent = formatFileSize(totalSize);
-                
-                // Estimate processing time (simplified)
-                const estimatedTime = files.length * 0.5; // 0.5s per file estimate
-                estimatedTimeStat.textContent = `${Math.ceil(estimatedTime)}s`;
-                
-                // Update preview if visible
-                if (previewContainer.classList.contains('visible') && files.length > 0) {
-                    showPreview(files[0]);
-                }
-            }
-
-            function formatFileSize(bytes) {
-                if (bytes === 0) return '0 Bytes';
-                const k = 1024;
-                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-                const i = Math.floor(Math.log(bytes) / Math.log(k));
-                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-            }
-
-            // Show privacy notice if not accepted
-            if (!privacyNoticeAccepted) {
-                setTimeout(() => {
-                    privacyNotice.classList.add('visible');
-                }, 2000);
-            }
-
-            // Event Listeners
-			selectFilesBtn.addEventListener('click', () => fileInput.click());
-
-			fileInput.addEventListener('change', handleFileSelect);
-
-			dropArea.addEventListener('dragover', (e) => {
-				e.preventDefault();
-				dropArea.classList.add('active');
-			});
-
-			dropArea.addEventListener('dragleave', () => {
-				dropArea.classList.remove('active');
-			});
-
-			dropArea.addEventListener('drop', (e) => {
-				e.preventDefault();
-				dropArea.classList.remove('active');
-				fileInput.files = e.dataTransfer.files;
-				handleFileSelect({ target: fileInput });
-			});
-
-			searchInput.addEventListener('input', filterFiles);
-
-			processBtn.addEventListener('click', processImages);
-
-			clearAllBtn.addEventListener('click', clearAllFiles);
-
-			downloadAllBtn.addEventListener('click', downloadAllAsZip);
-
-			shareAllBtn.addEventListener('click', shareFiles);
-
-			closeNotice.addEventListener('click', () => {
-				limitNotice.classList.remove('visible');
-			});
-
-			closePrivacyNotice.addEventListener('click', () => {
-				privacyNoticeAccepted = true;
-				localStorage.setItem('privacyNoticeAccepted', 'true');
-				privacyNotice.classList.remove('visible');
-			});
-
-			acceptPrivacyBtn.addEventListener('click', () => {
-				privacyNoticeAccepted = true;
-				localStorage.setItem('privacyNoticeAccepted', 'true');
-				privacyNotice.classList.remove('visible');
-			});
-
-			learnMoreBtn.addEventListener('click', () => {
-				showToast('Redirecting to privacy policy...', 'info');
-				// In a real app, this would redirect to your privacy policy page
-			});
-
-            
-            toggleAdvanced.addEventListener('click', () => {
-                advancedOptions.classList.toggle('visible');
-                toggleAdvanced.innerHTML = advancedOptions.classList.contains('visible') ? 
-                    '<i class="fas fa-chevron-down"></i>' : '<i class="fas fa-chevron-up"></i>';
-            });
-            
-            qualitySlider.addEventListener('input', () => {
-                qualityValue.textContent = `${qualitySlider.value}%`;
-            });
-            
-            compressionSlider.addEventListener('input', () => {
-                compressionValue.textContent = `${compressionSlider.value}%`;
-            });
-            
-            watermarkCheckbox.addEventListener('change', () => {
-                watermarkOptions.style.display = watermarkCheckbox.checked ? 'block' : 'none';
-                if (watermarkCheckbox.checked) {
-                    updateWatermarkPreview();
-                }
-            });
-            
-            watermarkText.addEventListener('input', updateWatermarkPreview);
-            watermarkPosition.addEventListener('change', updateWatermarkPreview);
-            watermarkColor.addEventListener('input', updateWatermarkPreview);
-            watermarkBgColor.addEventListener('input', updateWatermarkPreview);
-            watermarkSize.addEventListener('input', updateWatermarkPreview);
-            
-            // Dark mode toggle
-            darkModeToggle.addEventListener('change', toggleDarkMode);
-            
-            // Batch rename input
-            batchRenameInput.addEventListener('input', updateFileNamesPreview);
-            
-            // Rotation and filter changes
-            rotationSelect.addEventListener('change', updateRealTimeStats);
-            imageFilter.addEventListener('change', updateRealTimeStats);
-            
-            // Initialize resize functionality
-            initResizeFunctionality();
-            
-            // Initialize dark mode
-            applyDarkModePreference();
-            
-            // Animate stats counters
-            animateStats();
-            
-            // Functions
-            function animateStats() {
-                // Set initial values
-                usersCount.textContent = happyUsersCount.toLocaleString();
-                imagesCount.textContent = processedImagesCount.toLocaleString();
-                
-                // Animate time saved and formats count
-                animateValue(document.getElementById('timeSavedCount'), 0, 5000, 2000);
-                animateValue(document.getElementById('formatsCount'), 0, 10, 100);
-                
-                // Start auto-incrementing counters
-                startAutoIncrement();
-            }
-            
-            function startAutoIncrement() {
-                // Processed images counter - increments every minute (4-5 randomly)
-                setInterval(() => {
-                    const increment = Math.floor(Math.random() * 2) + 4; // Random between 4-5
-                    processedImagesCount += increment;
-                    imagesCount.textContent = processedImagesCount.toLocaleString();
-                }, 60000); // Every minute
-                
-                // Happy users counter - increments by 1 every minute
-                setInterval(() => {
-                    happyUsersCount += 1;
-                    usersCount.textContent = happyUsersCount.toLocaleString();
-                }, 60000); // Every minute
-            }
-            
-            function animateValue(element, start, end, duration) {
-                let startTimestamp = null;
-                const step = (timestamp) => {
-                    if (!startTimestamp) startTimestamp = timestamp;
-                    const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-                    const value = Math.floor(progress * (end - start) + start);
-                    element.textContent = value.toLocaleString() + (element.id === 'usersCount' ? '+' : 
-                                        element.id === 'imagesCount' ? '+' : 
-                                        element.id === 'timeSavedCount' ? '+' : '+');
-                    if (progress < 1) {
-                        window.requestAnimationFrame(step);
-                    }
-                };
-                window.requestAnimationFrame(step);
-            }
-            
-            function showToast(message, type = 'success') {
-                toastMessage.textContent = message;
-                toast.className = 'toast ' + type;
-                toast.classList.add('visible');
-                
-                setTimeout(() => {
-                    toast.classList.remove('visible');
-                }, 3000);
-            }
-            
-            function updateWatermarkPreview() {
-                const ctx = watermarkPreviewCanvas.getContext('2d');
-                const width = watermarkPreviewCanvas.width;
-                const height = watermarkPreviewCanvas.height;
-                
-                // Clear canvas
-                ctx.clearRect(0, 0, width, height);
-                
-                // Draw sample image
-                ctx.fillStyle = '#f0f0f0';
-                ctx.fillRect(0, 0, width, height);
-                ctx.fillStyle = '#ddd';
-                ctx.fillRect(10, 10, width-20, height-20);
-                
-                // Draw watermark
-                const text = watermarkText.value || 'SAMPLE';
-                const fontSize = parseInt(watermarkSize.value);
-                const color = watermarkColor.value;
-                const bgColor = watermarkBgColor.value;
-                
-                ctx.font = `bold ${fontSize}px Arial`;
-                const textWidth = ctx.measureText(text).width;
-                const textHeight = fontSize;
-                
-                let x, y;
-                
-                switch(watermarkPosition.value) {
-                    case 'top-left':
-                        x = 20;
-                        y = 20 + fontSize;
-                        break;
-                    case 'top-right':
-                        x = width - 20 - textWidth;
-                        y = 20 + fontSize;
-                        break;
-                    case 'bottom-left':
-                        x = 20;
-                        y = height - 20;
-                        break;
-                    case 'bottom-right':
-                        x = width - 20 - textWidth;
-                        y = height - 20;
-                        break;
-                    case 'center':
-                        x = (width - textWidth) / 2;
-                        y = (height + fontSize) / 2;
-                        break;
-                }
-                
-                // Draw background
-                ctx.fillStyle = bgColor;
-                ctx.fillRect(x - 10, y - fontSize - 5, textWidth + 20, textHeight + 10);
-                
-                // Draw text
-                ctx.fillStyle = color;
-                ctx.fillText(text, x, y);
-                
-                watermarkPreview.classList.add('visible');
-            }
-            
-            function handleFileSelect(e) {
-                const newFiles = Array.from(e.target.files);
-                
-                // Check if adding these files would exceed the limit
-                if (files.length + newFiles.length > MAX_FILES) {
-                    showLimitNotice();
-                    showToast('Maximum 10 images allowed at once', 'error');
-                    return;
-                }
-                
-                // Filter only image files
-                const imageFiles = newFiles.filter(file => file.type.startsWith('image/') || 
-                    ['tif', 'tiff', 'bmp', 'ico', 'heic', 'raw'].some(ext => file.name.toLowerCase().endsWith(ext)));
-                
-                if (imageFiles.length === 0) {
-                    showToast('Please select only image files', 'error');
-                    return;
-                }
-                
-                // Add new files to our state
-                files = [...files, ...imageFiles];
-                
-                // Update file counter
-                updateFileCounter();
-                
-                // Create and store thumbnail URLs
-                imageFiles.forEach(file => {
-                    if (!thumbnailUrls[file.name]) {
-                        thumbnailUrls[file.name] = URL.createObjectURL(file);
-                    }
-                });
-                
-                // Update UI
-                updateFileTable();
-                updateRealTimeStats();
-                
-                // Show table and batch actions if we have files
-                if (files.length > 0) {
-                    imagesTable.classList.add('visible');
-                    batchActions.classList.add('visible');
-                    processBtn.disabled = false;
-                    advancedOptions.classList.add('visible');
-                    showToast(`${imageFiles.length} image(s) added successfully`, 'success');
-                }
-                
-                // Reset file input to allow selecting same files again
-                fileInput.value = '';
-            }
-            
-            function showLimitNotice() {
-                limitNotice.classList.add('visible');
-                setTimeout(() => {
-                    limitNotice.classList.remove('visible');
-                }, 5000);
-            }
-            
-            function updateFileCounter() {
-                if (files.length > 0) {
-                    fileCounter.textContent = files.length;
-                    fileCounter.style.display = 'flex';
-                    
-                    if (files.length >= MAX_FILES) {
-                        fileCounter.style.backgroundColor = 'var(--danger-color)';
-                    } else {
-                        fileCounter.style.backgroundColor = 'var(--primary-color)';
-                    }
-                } else {
-                    fileCounter.style.display = 'none';
-                }
-            }
-            
-            function updateFileTable(filteredFiles = null) {
-			const filesToDisplay = filteredFiles || files;
-			const searchContainer = document.getElementById('searchContainer');
-			
-			if (filesToDisplay.length === 0) {
-				tableBody.innerHTML = '<tr class="no-files"><td colspan="5">No images selected yet</td></tr>';
-				imagesTable.classList.remove('visible');
-				batchActions.classList.remove('visible');
-				advancedOptions.classList.remove('visible');
-				previewContainer.classList.remove('visible');
-				searchContainer.style.display = 'none'; // Hide search when no files
-				return;
-			}
+  setTheme(themeName) {
+    if (!this.availableThemes[themeName]) return;
     
-    // Show search container when files are present
-    searchContainer.style.display = 'block';
-                
-                tableBody.innerHTML = '';
-                
-                filesToDisplay.forEach((file, index) => {
-                    const row = document.createElement('tr');
-                    row.dataset.index = index;
-                    
-                    // Create thumbnail cell
-                    const thumbnailCell = document.createElement('td');
-                    thumbnailCell.setAttribute('data-label', 'Preview');
-                    const thumbnail = document.createElement('img');
-                    thumbnail.src = thumbnailUrls[file.name] || URL.createObjectURL(file);
-                    thumbnail.className = 'thumbnail';
-                    if (file.processing) {
-                        thumbnail.classList.add('processing');
-                    }
-                    thumbnail.alt = file.name;
-                    thumbnail.title = 'Click to preview';
-                    thumbnail.style.cursor = 'pointer';
-                    thumbnail.addEventListener('click', () => showPreview(file));
-                    thumbnailCell.appendChild(thumbnail);
-                    
-                    // Create file info cell
-                    const fileInfoCell = document.createElement('td');
-                    fileInfoCell.setAttribute('data-label', 'File Info');
-                    const fileInfoDiv = document.createElement('div');
-                    fileInfoDiv.className = 'file-info';
-                    
-                    const fileNameSpan = document.createElement('span');
-                    fileNameSpan.className = 'file-name';
-                    fileNameSpan.textContent = file.name;
-                    
-                    const fileSizeSpan = document.createElement('span');
-                    fileSizeSpan.className = 'file-size';
-                    fileSizeSpan.textContent = formatFileSize(file.size);
-                    
-                    fileInfoDiv.appendChild(fileNameSpan);
-                    fileInfoDiv.appendChild(document.createElement('br'));
-                    fileInfoDiv.appendChild(fileSizeSpan);
-                    fileInfoCell.appendChild(fileInfoDiv);
-                    
-                    // Create original format cell
-                    const formatCell = document.createElement('td');
-                    formatCell.setAttribute('data-label', 'Original Format');
-                    const fileExtension = getFileExtension(file.name);
-                    formatCell.textContent = fileExtension.toUpperCase();
-                    
-                    // Create status cell
-                    const statusCell = document.createElement('td');
-                    statusCell.setAttribute('data-label', 'Status');
-                    const statusDiv = document.createElement('div');
-                    
-                    if (file.processed) {
-                        const progressContainer = document.createElement('div');
-                        progressContainer.className = 'progress-container';
-                        
-                        const progressBar = document.createElement('div');
-                        progressBar.className = 'progress-bar';
-                        progressBar.style.width = '100%';
-                        
-                        progressContainer.appendChild(progressBar);
-                        statusDiv.appendChild(progressContainer);
-                        
-                        const statusSpan = document.createElement('span');
-                        statusSpan.className = 'status completed';
-                        statusSpan.innerHTML = '<i class="fas fa-check-circle"></i> Completed';
-                        statusDiv.appendChild(statusSpan);
-                    } else if (file.processing) {
-                        const progressContainer = document.createElement('div');
-                        progressContainer.className = 'progress-container';
-                        
-                        const progressBar = document.createElement('div');
-                        progressBar.className = 'progress-bar';
-                        progressBar.style.width = `${file.progress || 0}%`;
-                        
-                        progressContainer.appendChild(progressBar);
-                        statusDiv.appendChild(progressContainer);
-                        
-                        const statusSpan = document.createElement('span');
-                        statusSpan.className = 'status processing';
-                        statusSpan.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-                        statusDiv.appendChild(statusSpan);
-                    } else if (file.error) {
-                        const statusSpan = document.createElement('span');
-                        statusSpan.className = 'status error';
-                        statusSpan.innerHTML = '<i class="fas fa-exclamation-circle"></i> Error';
-                        statusDiv.appendChild(statusSpan);
-                    } else {
-                        const statusSpan = document.createElement('span');
-                        statusSpan.className = 'status';
-                        statusSpan.innerHTML = '<i class="fas fa-clock"></i> Pending';
-                        statusDiv.appendChild(statusSpan);
-                    }
-                    
-                    statusCell.appendChild(statusDiv);
-                    
-                    // Create actions cell
-                    const actionsCell = document.createElement('td');
-                    actionsCell.setAttribute('data-label', 'Actions');
-                    actionsCell.style.display = 'flex';
-                    actionsCell.style.gap = '8px';
-                    
-                    if (file.processed && file.downloadUrl) {
-                        const downloadBtn = document.createElement('button');
-                        downloadBtn.className = 'action-btn download-btn';
-                        downloadBtn.innerHTML = '<i class="fas fa-download"></i>';
-                        downloadBtn.title = 'Download';
-                        downloadBtn.addEventListener('click', () => downloadFile(file));
-                        actionsCell.appendChild(downloadBtn);
-                        
-                        const enhanceBtn = document.createElement('button');
-                        enhanceBtn.className = 'action-btn enhance-btn';
-                        enhanceBtn.innerHTML = '<i class="fas fa-magic"></i>';
-                        enhanceBtn.title = 'Enhance';
-                        enhanceBtn.addEventListener('click', () => enhanceFile(file));
-                        actionsCell.appendChild(enhanceBtn);
-                    }
-                    
-                    const deleteBtn = document.createElement('button');
-                    deleteBtn.className = 'action-btn delete-btn';
-                    deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
-                    deleteBtn.title = 'Remove';
-                    deleteBtn.addEventListener('click', () => removeFile(index));
-                    actionsCell.appendChild(deleteBtn);
-                    
-                    // Append all cells to row
-                    row.appendChild(thumbnailCell);
-                    row.appendChild(fileInfoCell);
-                    row.appendChild(formatCell);
-                    row.appendChild(statusCell);
-                    row.appendChild(actionsCell);
-                    
-                    // Append row to table
-                    tableBody.appendChild(row);
-                });
-            }
-            
-            function showPreview(file) {
-                originalPreview.src = thumbnailUrls[file.name];
-                
-                // Create enhanced version with all modifications
-                const img = new Image();
-                img.onload = function() {
-                    let canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    
-                    // Original dimensions
-                    canvas.width = img.width;
-                    canvas.height = img.height;
-                    ctx.drawImage(img, 0, 0);
-                    
-                    // Apply filter first
-                    if (imageFilter.value !== 'none') {
-                        canvas = applyFilter(canvas, imageFilter.value);
-                    }
-                    
-                    // Apply rotation
-                    const rotation = parseInt(rotationSelect.value);
-                    if (rotation !== 0) {
-                        canvas = applyRotation(canvas, rotation);
-                    }
-                    
-                    // Apply resizing to the rotated/filtered image
-                    let newWidth = canvas.width;
-                    let newHeight = canvas.height;
-                    
-                    if (resizeMode.value === 'percentage' && resizeValue.value) {
-                        const scale = resizeValue.value / 100;
-                        newWidth = canvas.width * scale;
-                        newHeight = canvas.height * scale;
-                    } else if (resizeMode.value === 'dimensions') {
-                        if (resizeWidth.value) newWidth = parseInt(resizeWidth.value);
-                        if (resizeHeight.value) newHeight = parseInt(resizeHeight.value);
-                    }
-                    
-                    // Create final canvas with correct dimensions
-                    const finalCanvas = document.createElement('canvas');
-                    finalCanvas.width = newWidth;
-                    finalCanvas.height = newHeight;
-                    const finalCtx = finalCanvas.getContext('2d');
-                    
-                    // Apply color space
-                    finalCtx.filter = getColorFilter();
-                    finalCtx.drawImage(canvas, 0, 0, newWidth, newHeight);
-                    
-                    // Apply watermark if enabled
-                    if (watermarkCheckbox.checked) {
-                        applyWatermark(finalCanvas);
-                    }
-                    
-                    enhancedPreview.src = finalCanvas.toDataURL();
-                    
-                    // Calculate stats
-                    const originalSize = file.size;
-                    const enhancedSize = Math.floor(originalSize * (100 - qualitySlider.value) / 100);
-                    const sizeReductionValue = Math.floor((originalSize - enhancedSize) / originalSize * 100);
-                    const qualityImprovement = Math.floor(Math.random() * 30) + 10; // Simulated
-                    
-                    sizeReduction.textContent = `${sizeReductionValue}%`;
-                    qualityDiff.textContent = `+${qualityImprovement}%`;
-                    timeSaved.textContent = `${Math.floor(Math.random() * 10) + 5}s`;
-                    
-                    previewContainer.classList.add('visible');
-                };
-                img.src = thumbnailUrls[file.name];
-            }
-            
-            function getColorFilter() {
-                const colorSpace = document.getElementById('colorSpace').value;
-                switch(colorSpace) {
-                    case 'grayscale':
-                        return 'grayscale(100%)';
-                    case 'cmyk':
-                        return 'sepia(100%) hue-rotate(180deg)';
-                    default:
-                        return 'none';
-                }
-            }
-            
-            function applyWatermark(canvas) {
-                const ctx = canvas.getContext('2d');
-                const text = watermarkText.value || 'SAMPLE';
-                const fontSize = parseInt(watermarkSize.value);
-                const color = watermarkColor.value;
-                const bgColor = watermarkBgColor.value;
-                
-                ctx.font = `bold ${fontSize}px Arial`;
-                const textWidth = ctx.measureText(text).width;
-                const textHeight = fontSize;
-                
-                let x, y;
-                
-                switch(watermarkPosition.value) {
-                    case 'top-left':
-                        x = 20;
-                        y = 20 + fontSize;
-                        break;
-                    case 'top-right':
-                        x = canvas.width - 20 - textWidth;
-                        y = 20 + fontSize;
-                        break;
-                    case 'bottom-left':
-                        x = 20;
-                        y = canvas.height - 20;
-                        break;
-                    case 'bottom-right':
-                        x = canvas.width - 20 - textWidth;
-                        y = canvas.height - 20;
-                        break;
-                    case 'center':
-                        x = (canvas.width - textWidth) / 2;
-                        y = (canvas.height + fontSize) / 2;
-                        break;
-                }
-                
-                // Draw background
-                ctx.fillStyle = bgColor;
-                ctx.fillRect(x - 10, y - fontSize - 5, textWidth + 20, textHeight + 10);
-                
-                // Draw text
-                ctx.fillStyle = color;
-                ctx.fillText(text, x, y);
-            }
-            
-            function enhanceFile(file) {
-                showToast(`Enhancing ${file.name} with AI...`, 'info');
-                // In a real app, this would call an AI enhancement API
-            }
-            
-            function getFileExtension(filename) {
-                return filename.split('.').pop().toLowerCase();
-            }
-            
-            function filterFiles() {
-                const searchTerm = searchInput.value.toLowerCase();
-                if (!searchTerm) {
-                    updateFileTable();
-                    return;
-                }
-                
-                const filtered = files.filter(file => 
-                    file.name.toLowerCase().includes(searchTerm)
-                );
-                
-                updateFileTable(filtered);
-            }
-            
-            function removeFile(index) {
-                // Revoke the thumbnail URL to free memory
-                if (thumbnailUrls[files[index].name]) {
-                    URL.revokeObjectURL(thumbnailUrls[files[index].name]);
-                    delete thumbnailUrls[files[index].name];
-                }
-                
-                const fileName = files[index].name;
-                files.splice(index, 1);
-                updateFileTable();
-                updateFileCounter();
-                updateRealTimeStats();
-                
-                if (files.length === 0) {
-                    processBtn.disabled = true;
-                }
-                
-                showToast(`Removed ${fileName}`, 'success');
-            }
-            
-            function clearAllFiles() {
-                if (files.length === 0) return;
-                
-                if (confirm('Are you sure you want to remove all files?')) {
-                    // Revoke all thumbnail URLs
-                    files.forEach(file => {
-                        if (thumbnailUrls[file.name]) {
-                            URL.revokeObjectURL(thumbnailUrls[file.name]);
-                        }
-                    });
-                    
-                    files = [];
-                    processedFiles = [];
-                    thumbnailUrls = {};
-                    updateFileTable();
-                    updateFileCounter();
-                    updateRealTimeStats();
-                    processBtn.disabled = true;
-                    previewContainer.classList.remove('visible');
-                    showToast('All files cleared', 'success');
-                }
-            }
-            
-            async function processImages() {
-                if (files.length === 0) return;
-                
-                const format = outputFormat.value;
-                const quality = qualitySlider.value;
-                const resizeModeValue = resizeMode.value;
-                const resizeValueValue = resizeValue.value;
-                const width = resizeWidth.value;
-                const height = resizeHeight.value;
-                const compression = compressionSlider.value;
-                const colorSpace = document.getElementById('colorSpace').value;
-                const dpi = document.getElementById('dpi').value;
-                const optimize = document.getElementById('optimize').checked;
-                const preserveExif = document.getElementById('preserveExif').checked;
-                const watermark = document.getElementById('watermark').checked;
-                
-                processBtn.disabled = true;
-                processBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing Images...';
-                showToast('Starting image processing...', 'info');
-                
-                // Show processing status for all files
-                files.forEach(file => {
-                    file.processing = true;
-                    file.progress = 0;
-                });
-                updateFileTable();
-                
-                // Process files one by one
-                for (let i = 0; i < files.length; i++) {
-                    const file = files[i];
-                    
-                    // Skip already processed files
-                    if (file.processed) continue;
-                    
-                    try {
-                        // Simulate processing with actual conversion
-                        await convertImage(file, format, quality, resizeModeValue, resizeValueValue, width, height, colorSpace, watermark);
-                        
-                        // Mark as processed
-                        file.processing = false;
-                        file.processed = true;
-                        file.progress = 100;
-                        
-                        // Add to processed files array
-                        processedFiles.push(file);
-                        
-                        updateFileTable();
-                        showToast(`Processed ${file.name}`, 'success');
-                    } catch (error) {
-                        console.error('Error processing file:', file.name, error);
-                        file.processing = false;
-                        file.error = true;
-                        
-                        updateFileTable();
-                        showToast(`Error processing ${file.name}`, 'error');
-                    }
-                }
-                
-                processBtn.disabled = false;
-                processBtn.innerHTML = '<i class="fas fa-magic"></i> Process Images';
-                showToast('All images processed successfully!', 'success');
-                
-                // Show preview of first processed file
-                if (processedFiles.length > 0) {
-                    showPreview(processedFiles[0]);
-                }
-            }
-            
-            function convertImage(file, format, quality, resizeMode, resizeValue, width, height, colorSpace, addWatermark) {
-                return new Promise((resolve) => {
-                    // Simulate progress updates
-                    const interval = setInterval(() => {
-                        file.progress += Math.floor(Math.random() * 10) + 5;
-                        if (file.progress >= 100) {
-                            file.progress = 100;
-                            clearInterval(interval);
-                            
-                            // Create canvas for final image
-                            const img = new Image();
-                            img.onload = function() {
-                                let canvas = document.createElement('canvas');
-                                const ctx = canvas.getContext('2d');
-                                
-                                // Original dimensions
-                                canvas.width = img.width;
-                                canvas.height = img.height;
-                                ctx.drawImage(img, 0, 0);
-                                
-                                // Apply filter first
-                                if (imageFilter.value !== 'none') {
-                                    canvas = applyFilter(canvas, imageFilter.value);
-                                }
-                                
-                                // Apply rotation
-                                const rotation = parseInt(rotationSelect.value);
-                                if (rotation !== 0) {
-                                    canvas = applyRotation(canvas, rotation);
-                                }
-                                
-                                // Apply resizing to the rotated/filtered image
-                                let newWidth = canvas.width;
-                                let newHeight = canvas.height;
-                                
-                                if (resizeMode === 'percentage' && resizeValue) {
-                                    const scale = resizeValue / 100;
-                                    newWidth = canvas.width * scale;
-                                    newHeight = canvas.height * scale;
-                                } else if (resizeMode === 'dimensions') {
-                                    if (width) newWidth = parseInt(width);
-                                    if (height) newHeight = parseInt(height);
-                                }
-                                
-                                // Create final canvas with correct dimensions
-                                const finalCanvas = document.createElement('canvas');
-                                finalCanvas.width = newWidth;
-                                finalCanvas.height = newHeight;
-                                const finalCtx = finalCanvas.getContext('2d');
-                                
-                                // Apply color space
-                                finalCtx.filter = getColorFilter();
-                                finalCtx.drawImage(canvas, 0, 0, newWidth, newHeight);
-                                
-                                // Apply watermark if enabled
-                                if (addWatermark) {
-                                    applyWatermark(finalCanvas);
-                                }
-                                
-                                // Create download URL
-                                let mimeType = 'image/jpeg';
-                                if (format === 'png') mimeType = 'image/png';
-                                else if (format === 'webp') mimeType = 'image/webp';
-                                else if (format === 'gif') mimeType = 'image/gif';
-                                else if (format === 'bmp') mimeType = 'image/bmp';
-                                
-                                finalCanvas.toBlob(blob => {
-                                    file.downloadUrl = URL.createObjectURL(blob);
-                                    file.convertedFormat = format;
-                                    file.convertedSize = blob.size;
-                                    
-                                    // Apply batch rename if specified
-                                    if (batchRenameInput.value) {
-                                        file.finalName = generateNewFileName(file.name, batchRenameInput.value, files.indexOf(file));
-                                    } else {
-                                        file.finalName = `${file.name.split('.')[0]}.${file.convertedFormat || outputFormat.value}`;
-                                    }
-                                    
-                                    resolve();
-                                }, mimeType, quality/100);
-                            };
-                            img.src = thumbnailUrls[file.name];
-                        }
-                        updateFileTable();
-                    }, 200);
-                });
-            }
-            
-            function downloadFile(file) {
-                if (!file.downloadUrl) return;
-                
-                const a = document.createElement('a');
-                a.href = file.downloadUrl;
-                a.download = file.finalName || `${file.name.split('.')[0]}.${file.convertedFormat || outputFormat.value}`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                showToast(`Downloading ${file.finalName || file.name}`, 'success');
-            }
-            
-            async function downloadAllAsZip() {
-                if (processedFiles.length === 0) {
-                    showToast('No processed files available for download', 'error');
-                    return;
-                }
-                
-                try {
-                    // Show loading state on button
-                    const originalText = downloadAllBtn.innerHTML;
-                    downloadAllBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating ZIP...';
-                    downloadAllBtn.disabled = true;
-                    showToast('Creating ZIP archive...', 'info');
-                    
-                    // Create a new JSZip instance
-                    const zip = new JSZip();
-                    const folder = zip.folder("converted_images");
-                    
-                    // Add each processed file to the ZIP
-                    for (const file of processedFiles) {
-                        if (file.downloadUrl) {
-                            // Fetch the file
-                            const response = await fetch(file.downloadUrl);
-                            const blob = await response.blob();
-                            
-                            // Add to ZIP with proper extension
-                            const fileName = file.finalName || `${file.name.split('.')[0]}.${file.convertedFormat || outputFormat.value}`;
-                            folder.file(fileName, blob);
-                        }
-                    }
-                    
-                    // Generate the ZIP file
-                    const content = await zip.generateAsync({ type: "blob" });
-                    
-                    // Download the ZIP file
-                    saveAs(content, "converted_images.zip");
-                    showToast('ZIP download started!', 'success');
-                    
-                } catch (error) {
-                    console.error('Error creating ZIP file:', error);
-                    showToast('Error creating ZIP file', 'error');
-                } finally {
-                    // Restore button state
-                    downloadAllBtn.innerHTML = '<i class="fas fa-download"></i> Download All (ZIP)';
-                    downloadAllBtn.disabled = false;
-                }
-            }
-            
-			
-            function shareFiles() {
-                if (processedFiles.length === 0) {
-                    showToast('No processed files available to share', 'error');
-                    return;
-                }
-                
-                if (navigator.share) {
-                    navigator.share({
-                        title: 'Converted Images',
-                        text: `I just converted ${processedFiles.length} images using BatchPixel  Image Converter!`,
-                        url: window.location.href
-                    }).then(() => {
-                        showToast('Shared successfully!', 'success');
-                    }).catch(err => {
-                        console.log('Error sharing:', err);
-                        showToast('Sharing failed', 'error');
-                    });
-                } else {
-                    showToast('Web Share API not supported in your browser', 'error');
-                }
-            }
-            
-            // Initialize watermark preview
-            updateWatermarkPreview();
+    this.currentTheme = themeName;
+    document.documentElement.setAttribute('data-theme', themeName);
+    
+    try {
+      localStorage.setItem('image-converter-theme', themeName);
+    } catch {}
+    
+    this.updateUI(themeName);
+    this.showToast(`Theme switched to ${this.availableThemes[themeName].label}`, 'info');
+  }
+
+  updateUI(themeName) {
+    // Update toggle buttons
+    document.querySelectorAll('.theme-toggle-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.theme === themeName);
+    });
+    
+    // Update meta theme color
+    const metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (metaTheme) {
+      const colors = {
+        white: '#f5f7fa',
+        gold: '#fefcf5',
+        dark: '#0a0a0a'
+      };
+      metaTheme.content = colors[themeName] || colors.white;
+    }
+  }
+
+  toggleTheme() {
+    const themes = ['white', 'gold', 'dark'];
+    const currentIndex = themes.indexOf(this.currentTheme);
+    const nextIndex = (currentIndex + 1) % themes.length;
+    this.setTheme(themes[nextIndex]);
+  }
+
+  renderThemeToggle() {
+    const container = document.createElement('div');
+    container.className = 'theme-toggle-container';
+    container.innerHTML = `
+      <button class="theme-toggle-btn white-theme ${this.currentTheme === 'white' ? 'active' : ''}" 
+              data-theme="white" 
+              onclick="themeManager.setTheme('white')" 
+              title="White Theme">
+        <i class="fas fa-sun"></i>
+      </button>
+      <button class="theme-toggle-btn gold-theme ${this.currentTheme === 'gold' ? 'active' : ''}" 
+              data-theme="gold" 
+              onclick="themeManager.setTheme('gold')" 
+              title="Gold Theme">
+        <i class="fas fa-crown"></i>
+      </button>
+      <button class="theme-toggle-btn dark-theme ${this.currentTheme === 'dark' ? 'active' : ''}" 
+              data-theme="dark" 
+              onclick="themeManager.setTheme('dark')" 
+              title="Dark Theme">
+        <i class="fas fa-moon"></i>
+      </button>
+    `;
+    return container;
+  }
+
+  showToast(message, type = 'info') {
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toastMessage');
+    if (!toast || !toastMessage) return;
+    
+    toast.className = `toast ${type}`;
+    toastMessage.textContent = message;
+    toast.classList.add('visible');
+    
+    clearTimeout(this._toastTimeout);
+    this._toastTimeout = setTimeout(() => {
+      toast.classList.remove('visible');
+    }, 3000);
+  }
+}
+
+// Initialize Theme Manager
+const themeManager = new ThemeManager();
+
+// ============================================================
+// IMAGE CONVERTER - MAIN APPLICATION
+// ============================================================
+
+document.addEventListener('DOMContentLoaded', function() {
+  // Apply stored theme
+  themeManager.setTheme(themeManager.getStoredTheme());
+  
+  // Insert theme toggle
+  const header = document.querySelector('.header');
+  if (header) {
+    const toggle = themeManager.renderThemeToggle();
+    header.prepend(toggle);
+  }
+  
+  // Initialize the converter
+  ImageConverter.init();
+});
+
+// ============================================================
+// IMAGE CONVERTER CLASS
+// ============================================================
+
+const ImageConverter = {
+  files: [],
+  processedFiles: [],
+  isProcessing: false,
+
+  init() {
+    this.cacheElements();
+    this.bindEvents();
+    this.updateUI();
+    this.initPrivacyNotice();
+  },
+
+  cacheElements() {
+    this.elements = {
+      dropArea: document.getElementById('dropArea'),
+      fileInput: document.getElementById('fileInput'),
+      selectBtn: document.getElementById('selectFilesBtn'),
+      processBtn: document.getElementById('processBtn'),
+      tableBody: document.getElementById('tableBody'),
+      imagesTable: document.getElementById('imagesTable'),
+      batchActions: document.getElementById('batchActions'),
+      searchInput: document.getElementById('searchInput'),
+      searchContainer: document.getElementById('searchContainer'),
+      clearAllBtn: document.getElementById('clearAllBtn'),
+      downloadAllBtn: document.getElementById('downloadAllBtn'),
+      shareAllBtn: document.getElementById('shareAllBtn'),
+      previewContainer: document.getElementById('previewContainer'),
+      originalPreview: document.getElementById('originalPreview'),
+      enhancedPreview: document.getElementById('enhancedPreview'),
+      fileCounter: document.getElementById('fileCounter'),
+      totalFilesStat: document.getElementById('totalFilesStat'),
+      totalSizeStat: document.getElementById('totalSizeStat'),
+      estimatedTimeStat: document.getElementById('estimatedTimeStat'),
+      quality: document.getElementById('quality'),
+      qualityValue: document.getElementById('qualityValue'),
+      resizeMode: document.getElementById('resizeMode'),
+      resizeValue: document.getElementById('resizeValue'),
+      resizeWidth: document.getElementById('resizeWidth'),
+      resizeHeight: document.getElementById('resizeHeight'),
+      dimensionsContainer: document.getElementById('dimensionsContainer'),
+      outputFormat: document.getElementById('outputFormat'),
+      rotation: document.getElementById('rotation'),
+      batchRename: document.getElementById('batchRename'),
+      imageFilter: document.getElementById('imageFilter'),
+      advancedOptions: document.getElementById('advancedOptions'),
+      toggleAdvanced: document.getElementById('toggleAdvanced'),
+      watermark: document.getElementById('watermark'),
+      watermarkOptions: document.getElementById('watermarkOptions'),
+      watermarkText: document.getElementById('watermarkText'),
+      watermarkPosition: document.getElementById('watermarkPosition'),
+      watermarkColor: document.getElementById('watermarkColor'),
+      watermarkBgColor: document.getElementById('watermarkBgColor'),
+      watermarkSize: document.getElementById('watermarkSize'),
+      watermarkPreviewCanvas: document.getElementById('watermarkPreviewCanvas'),
+      watermarkPreview: document.getElementById('watermarkPreview'),
+      toast: document.getElementById('toast'),
+      toastMessage: document.getElementById('toastMessage'),
+      privacyNotice: document.getElementById('privacyNotice'),
+      closePrivacyNotice: document.getElementById('closePrivacyNotice'),
+      acceptPrivacyBtn: document.getElementById('acceptPrivacyBtn'),
+      learnMoreBtn: document.getElementById('learnMoreBtn')
+    };
+  },
+
+  bindEvents() {
+    const { dropArea, fileInput, selectBtn, processBtn, clearAllBtn, downloadAllBtn } = this.elements;
+
+    // File selection
+    selectBtn?.addEventListener('click', () => fileInput?.click());
+    fileInput?.addEventListener('change', (e) => this.handleFiles(e.target.files));
+
+    // Drag and drop
+    dropArea?.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropArea.classList.add('active');
+    });
+
+    dropArea?.addEventListener('dragleave', () => {
+      dropArea.classList.remove('active');
+    });
+
+    dropArea?.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropArea.classList.remove('active');
+      this.handleFiles(e.dataTransfer.files);
+    });
+
+    // Quality slider
+    const quality = document.getElementById('quality');
+    if (quality) {
+      quality.addEventListener('input', () => {
+        document.getElementById('qualityValue').textContent = quality.value + '%';
+      });
+    }
+
+    // Resize mode
+    const resizeMode = document.getElementById('resizeMode');
+    if (resizeMode) {
+      resizeMode.addEventListener('change', () => this.toggleResizeOptions());
+    }
+
+    // Resize value
+    const resizeValue = document.getElementById('resizeValue');
+    if (resizeValue) {
+      resizeValue.addEventListener('input', () => this.toggleResizeOptions());
+    }
+
+    // Watermark toggle
+    const watermark = document.getElementById('watermark');
+    if (watermark) {
+      watermark.addEventListener('change', () => {
+        const options = document.getElementById('watermarkOptions');
+        if (options) {
+          options.style.display = watermark.checked ? 'block' : 'none';
+        }
+        if (watermark.checked) {
+          this.updateWatermarkPreview();
+        }
+      });
+    }
+
+    // Watermark settings
+    ['watermarkText', 'watermarkPosition', 'watermarkColor', 'watermarkBgColor', 'watermarkSize'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('change', () => this.updateWatermarkPreview());
+        el.addEventListener('input', () => this.updateWatermarkPreview());
+      }
+    });
+
+    // Advanced toggle
+    const toggleAdvanced = document.getElementById('toggleAdvanced');
+    if (toggleAdvanced) {
+      toggleAdvanced.addEventListener('click', () => {
+        const options = document.getElementById('advancedOptions');
+        if (options) {
+          options.classList.toggle('visible');
+        }
+      });
+    }
+
+    // Search
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+      searchInput.addEventListener('input', () => this.filterTable());
+    }
+
+    // Process button
+    processBtn?.addEventListener('click', () => this.processImages());
+
+    // Clear all
+    clearAllBtn?.addEventListener('click', () => this.clearAll());
+
+    // Download all
+    downloadAllBtn?.addEventListener('click', () => this.downloadAll());
+
+    // Share all
+    const shareAllBtn = document.getElementById('shareAllBtn');
+    if (shareAllBtn) {
+      shareAllBtn.addEventListener('click', () => this.shareAll());
+    }
+
+    // Privacy notice
+    this.bindPrivacyEvents();
+  },
+
+  handleFiles(fileList) {
+    const files = Array.from(fileList).filter(f => f.type.startsWith('image/'));
+    
+    if (files.length === 0) {
+      this.showToast('No valid images found!', 'error');
+      return;
+    }
+
+    // Limit check (10 files max in free version)
+    if (this.files.length + files.length > 10) {
+      this.showToast('Limit reached! Max 10 images at a time.', 'error');
+      document.getElementById('limitNotice').classList.add('visible');
+      return;
+    }
+
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        this.files.push({
+          file: file,
+          name: file.name,
+          size: file.size,
+          dataUrl: e.target.result,
+          status: 'ready',
+          progress: 0,
+          processedDataUrl: null,
+          processedSize: 0
         });
+        this.updateUI();
+      };
+      reader.readAsDataURL(file);
+    });
+  },
+
+  updateUI() {
+    const { tableBody, fileCounter, imagesTable, batchActions, searchContainer, totalFilesStat, totalSizeStat, processBtn } = this.elements;
+
+    // Update counter
+    if (fileCounter) {
+      fileCounter.textContent = this.files.length;
+      fileCounter.style.display = this.files.length > 0 ? 'flex' : 'none';
+    }
+
+    // Update stats
+    if (totalFilesStat) {
+      totalFilesStat.textContent = this.files.length;
+    }
+
+    if (totalSizeStat) {
+      const totalSize = this.files.reduce((acc, f) => acc + f.size, 0);
+      totalSizeStat.textContent = totalSize > 0 ? (totalSize / (1024 * 1024)).toFixed(2) + ' MB' : '0 MB';
+    }
+
+    // Show/hide elements
+    if (imagesTable) {
+      imagesTable.classList.toggle('visible', this.files.length > 0);
+    }
+
+    if (batchActions) {
+      batchActions.classList.toggle('visible', this.files.length > 0);
+    }
+
+    if (searchContainer) {
+      searchContainer.classList.toggle('visible', this.files.length > 0);
+    }
+
+    // Enable/disable process button
+    if (processBtn) {
+      processBtn.disabled = this.files.length === 0 || this.isProcessing;
+      processBtn.innerHTML = this.isProcessing 
+        ? '<i class="fas fa-spinner spinner"></i> Processing...' 
+        : '<i class="fas fa-magic"></i> Process Images';
+    }
+
+    // Render table
+    this.renderTable();
+  },
+
+  renderTable() {
+    const { tableBody, searchInput } = this.elements;
+    if (!tableBody) return;
+
+    const searchTerm = searchInput?.value?.toLowerCase() || '';
+
+    let html = '';
+    let filteredFiles = this.files;
+
+    if (searchTerm) {
+      filteredFiles = this.files.filter(f => f.name.toLowerCase().includes(searchTerm));
+    }
+
+    if (filteredFiles.length === 0) {
+      html = `<tr class="no-files"><td colspan="5">${this.files.length === 0 ? 'No images selected yet' : 'No matching images found'}</td></tr>`;
+    } else {
+      filteredFiles.forEach((file, index) => {
+        const originalIndex = this.files.indexOf(file);
+        const statusText = file.status === 'completed' ? '✅ Completed' : 
+                          file.status === 'processing' ? '⏳ Processing' : 
+                          file.status === 'error' ? '❌ Error' : '⏸️ Ready';
+        
+        const statusClass = file.status === 'completed' ? 'completed' : 
+                           file.status === 'processing' ? 'processing' : 
+                           file.status === 'error' ? 'error' : '';
+        
+        html += `
+          <tr>
+            <td data-label="Preview">
+              <img src="${file.dataUrl}" alt="${file.name}" class="thumbnail ${file.status === 'processing' ? 'processing' : ''}">
+            </td>
+            <td data-label="File Name">
+              <div class="file-info">
+                <span class="file-name">${file.name}</span>
+              </div>
+            </td>
+            <td data-label="Original">
+              <span class="file-size">${(file.size / 1024).toFixed(1)} KB</span>
+              ${file.processedSize ? `<br><small style="color:var(--success-color);">→ ${(file.processedSize / 1024).toFixed(1)} KB</small>` : ''}
+            </td>
+            <td data-label="Status">
+              <div class="status ${statusClass}">${statusText}</div>
+              ${file.status === 'processing' ? `<div class="progress-container"><div class="progress-bar" style="width:${file.progress || 0}%;"></div></div>` : ''}
+            </td>
+            <td data-label="Actions">
+              ${file.status === 'completed' ? `<button class="action-btn download-btn" onclick="ImageConverter.downloadSingle(${originalIndex})"><i class="fas fa-download"></i></button>` : ''}
+              <button class="action-btn delete-btn" onclick="ImageConverter.removeFile(${originalIndex})"><i class="fas fa-trash"></i></button>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    tableBody.innerHTML = html;
+
+    // Update estimated time
+    const estimatedTime = this.files.length > 0 ? Math.ceil(this.files.length * 0.5) : 0;
+    if (this.elements.estimatedTimeStat) {
+      this.elements.estimatedTimeStat.textContent = estimatedTime + 's';
+    }
+  },
+
+  toggleResizeOptions() {
+    const mode = document.getElementById('resizeMode')?.value;
+    const resizeValue = document.getElementById('resizeValue');
+    const dimensions = document.getElementById('dimensionsContainer');
+    const width = document.getElementById('resizeWidth');
+    const height = document.getElementById('resizeHeight');
+
+    if (resizeValue) {
+      resizeValue.disabled = mode === 'none' || mode === 'dimensions';
+      resizeValue.placeholder = mode === 'percentage' ? 'Enter %' : mode === 'dimensions' ? 'Auto' : 'Disabled';
+    }
+
+    if (dimensions) {
+      dimensions.classList.toggle('visible', mode === 'dimensions');
+    }
+
+    if (width) width.disabled = mode !== 'dimensions';
+    if (height) height.disabled = mode !== 'dimensions';
+  },
+
+  updateWatermarkPreview() {
+    const canvas = document.getElementById('watermarkPreviewCanvas');
+    const preview = document.getElementById('watermarkPreview');
+    if (!canvas || !preview) return;
+
+    const text = document.getElementById('watermarkText')?.value || 'SAMPLE';
+    const color = document.getElementById('watermarkColor')?.value || '#ffffff';
+    const bgColor = document.getElementById('watermarkBgColor')?.value || '#00000080';
+    const size = parseInt(document.getElementById('watermarkSize')?.value) || 24;
+    const position = document.getElementById('watermarkPosition')?.value || 'bottom-right';
+
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Background
+    ctx.fillStyle = '#2d3436';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Watermark
+    ctx.font = `${size}px Arial`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Background
+    ctx.fillStyle = bgColor;
+    const metrics = ctx.measureText(text);
+    const padding = 20;
+    const textWidth = metrics.width + padding * 2;
+    const textHeight = size + padding * 2;
+
+    let x = canvas.width / 2;
+    let y = canvas.height / 2;
+
+    if (position === 'top-left') { x = textWidth / 2; y = textHeight / 2; }
+    else if (position === 'top-right') { x = canvas.width - textWidth / 2; y = textHeight / 2; }
+    else if (position === 'bottom-left') { x = textWidth / 2; y = canvas.height - textHeight / 2; }
+    else if (position === 'bottom-right') { x = canvas.width - textWidth / 2; y = canvas.height - textHeight / 2; }
+
+    ctx.fillRect(x - textWidth / 2, y - textHeight / 2, textWidth, textHeight);
+
+    // Text
+    ctx.fillStyle = color;
+    ctx.fillText(text, x, y);
+
+    preview.classList.add('visible');
+  },
+
+  async processImages() {
+    if (this.isProcessing || this.files.length === 0) return;
+
+    this.isProcessing = true;
+    this.updateUI();
+
+    const quality = parseInt(document.getElementById('quality')?.value) || 90;
+    const format = document.getElementById('outputFormat')?.value || 'jpg';
+    const rotation = parseInt(document.getElementById('rotation')?.value) || 0;
+    const filter = document.getElementById('imageFilter')?.value || 'none';
+    const batchRename = document.getElementById('batchRename')?.value || '';
+    const resizeMode = document.getElementById('resizeMode')?.value || 'none';
+    const resizeValue = parseFloat(document.getElementById('resizeValue')?.value) || 100;
+    const resizeWidth = parseInt(document.getElementById('resizeWidth')?.value) || 800;
+    const resizeHeight = parseInt(document.getElementById('resizeHeight')?.value) || 600;
+
+    for (let i = 0; i < this.files.length; i++) {
+      const fileData = this.files[i];
+      if (fileData.status === 'completed') continue;
+
+      fileData.status = 'processing';
+      fileData.progress = 0;
+      this.updateUI();
+
+      try {
+        const result = await this.processSingleImage(fileData, {
+          quality,
+          format,
+          rotation,
+          filter,
+          batchRename,
+          resizeMode,
+          resizeValue,
+          resizeWidth,
+          resizeHeight
+        });
+
+        fileData.status = 'completed';
+        fileData.progress = 100;
+        fileData.processedDataUrl = result;
+        fileData.processedSize = result.length * 0.75; // Approximate
+
+        this.showToast(`✅ Processed: ${fileData.name}`, 'success');
+
+      } catch (error) {
+        console.error('Processing error:', error);
+        fileData.status = 'error';
+        this.showToast(`❌ Error processing ${fileData.name}`, 'error');
+      }
+
+      this.updateUI();
+    }
+
+    this.isProcessing = false;
+    this.updateUI();
+
+    // Show preview of first processed image
+    const firstCompleted = this.files.find(f => f.status === 'completed');
+    if (firstCompleted) {
+      this.showPreview(firstCompleted);
+    }
+  },
+
+  processSingleImage(fileData, options) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          // Resize
+          if (options.resizeMode === 'percentage') {
+            const pct = options.resizeValue / 100;
+            width = Math.round(width * pct);
+            height = Math.round(height * pct);
+          } else if (options.resizeMode === 'dimensions') {
+            width = options.resizeWidth || width;
+            height = options.resizeHeight || height;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext('2d');
+
+          // Apply rotation
+          if (options.rotation !== 0) {
+            ctx.translate(width / 2, height / 2);
+            ctx.rotate((options.rotation * Math.PI) / 180);
+            ctx.translate(-width / 2, -height / 2);
+          }
+
+          // Draw image
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Apply filter
+          if (options.filter !== 'none') {
+            this.applyFilter(ctx, width, height, options.filter);
+          }
+
+          // Get output
+          const mimeType = options.format === 'jpg' ? 'image/jpeg' : `image/${options.format}`;
+          const output = canvas.toDataURL(mimeType, options.quality / 100);
+
+          resolve(output);
+        } catch (e) {
+          reject(e);
+        }
+      };
+      img.onerror = () => reject(new Error('Failed to load image'));
+      img.src = fileData.dataUrl;
+    });
+  },
+
+  applyFilter(ctx, width, height, filter) {
+    const imageData = ctx.getImageData(0, 0, width, height);
+    const data = imageData.data;
+
+    switch (filter) {
+      case 'grayscale':
+        for (let i = 0; i < data.length; i += 4) {
+          const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+          data[i] = data[i + 1] = data[i + 2] = gray;
+        }
+        break;
+      case 'sepia':
+        for (let i = 0; i < data.length; i += 4) {
+          const r = data[i], g = data[i + 1], b = data[i + 2];
+          data[i] = Math.min(255, r * 0.393 + g * 0.769 + b * 0.189);
+          data[i + 1] = Math.min(255, r * 0.349 + g * 0.686 + b * 0.168);
+          data[i + 2] = Math.min(255, r * 0.272 + g * 0.534 + b * 0.131);
+        }
+        break;
+      case 'invert':
+        for (let i = 0; i < data.length; i += 4) {
+          data[i] = 255 - data[i];
+          data[i + 1] = 255 - data[i + 1];
+          data[i + 2] = 255 - data[i + 2];
+        }
+        break;
+      case 'vintage':
+        for (let i = 0; i < data.length; i += 4) {
+          const r = data[i], g = data[i + 1], b = data[i + 2];
+          data[i] = Math.min(255, r * 1.2 + g * 0.1);
+          data[i + 1] = Math.min(255, g * 0.9 + b * 0.1);
+          data[i + 2] = Math.min(255, b * 0.8);
+        }
+        break;
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+  },
+
+  showPreview(fileData) {
+    const { previewContainer, originalPreview, enhancedPreview, sizeReduction, qualityDiff, timeSaved } = this.elements;
+
+    if (!previewContainer || !originalPreview || !enhancedPreview) return;
+
+    originalPreview.src = fileData.dataUrl;
+    enhancedPreview.src = fileData.processedDataUrl || fileData.dataUrl;
+
+    // Calculate stats
+    const originalSize = fileData.size;
+    const processedSize = fileData.processedSize || originalSize;
+    const reduction = originalSize > 0 ? ((originalSize - processedSize) / originalSize * 100).toFixed(1) : 0;
+
+    if (sizeReduction) sizeReduction.textContent = reduction + '%';
+    if (qualityDiff) qualityDiff.textContent = '+15%';
+    if (timeSaved) timeSaved.textContent = '0.5s';
+
+    previewContainer.classList.add('visible');
+  },
+
+  filterTable() {
+    this.renderTable();
+  },
+
+  removeFile(index) {
+    this.files.splice(index, 1);
+    this.updateUI();
+    this.showToast('File removed', 'info');
+  },
+
+  clearAll() {
+    if (this.files.length === 0) return;
+    if (!confirm('Remove all images?')) return;
+    this.files = [];
+    this.updateUI();
+    this.showToast('All files cleared', 'info');
+  },
+
+  downloadSingle(index) {
+    const file = this.files[index];
+    if (!file || !file.processedDataUrl) return;
+
+    const link = document.createElement('a');
+    link.download = file.name.replace(/\.[^.]+$/, '') + '_optimized.' + (document.getElementById('outputFormat')?.value || 'jpg');
+    link.href = file.processedDataUrl;
+    link.click();
+  },
+
+  async downloadAll() {
+    const completed = this.files.filter(f => f.status === 'completed');
+    if (completed.length === 0) {
+      this.showToast('No processed images to download', 'error');
+      return;
+    }
+
+    try {
+      if (typeof JSZip === 'undefined') {
+        this.showToast('Please wait, loading ZIP library...', 'info');
+        await this.loadJSZip();
+      }
+
+      const zip = new JSZip();
+      const format = document.getElementById('outputFormat')?.value || 'jpg';
+
+      completed.forEach((file, i) => {
+        const dataUrl = file.processedDataUrl;
+        const base64Data = dataUrl.split(',')[1];
+        const fileName = (document.getElementById('batchRename')?.value || file.name.replace(/\.[^.]+$/, '')) 
+          .replace(/\{num\}/g, String(i + 1).padStart(2, '0')) + '.' + format;
+        zip.file(fileName, base64Data, { base64: true });
+      });
+
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const link = document.createElement('a');
+      link.download = `images_${new Date().toISOString().slice(0,10)}.zip`;
+      link.href = URL.createObjectURL(zipBlob);
+      link.click();
+      URL.revokeObjectURL(link.href);
+
+      this.showToast('✅ All images downloaded successfully!', 'success');
+    } catch (error) {
+      console.error('ZIP error:', error);
+      this.showToast('Error creating ZIP file', 'error');
+    }
+  },
+
+  loadJSZip() {
+    return new Promise((resolve, reject) => {
+      if (typeof JSZip !== 'undefined') {
+        resolve();
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+      script.onload = () => {
+        // Load FileSaver too
+        const fsScript = document.createElement('script');
+        fsScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js';
+        fsScript.onload = () => resolve();
+        fsScript.onerror = () => reject(new Error('Failed to load FileSaver'));
+        document.head.appendChild(fsScript);
+      };
+      script.onerror = () => reject(new Error('Failed to load JSZip'));
+      document.head.appendChild(script);
+    });
+  },
+
+  shareAll() {
+    if (this.files.length === 0) {
+      this.showToast('No images to share', 'error');
+      return;
+    }
+
+    if (navigator.share) {
+      const files = this.files.filter(f => f.status === 'completed').map(f => f.file);
+      if (files.length === 0) {
+        this.showToast('No processed images to share', 'error');
+        return;
+      }
+      navigator.share({
+        title: 'My Optimized Images',
+        text: 'Check out these images!',
+        files: files
+      }).catch(() => {});
+    } else {
+      this.showToast('Share feature is not available on this device', 'info');
+    }
+  },
+
+  // ============================================================
+  // PRIVACY NOTICE
+  // ============================================================
+  initPrivacyNotice() {
+    const hasAccepted = localStorage.getItem('privacy-notice-accepted');
+    if (!hasAccepted) {
+      setTimeout(() => {
+        const notice = document.getElementById('privacyNotice');
+        if (notice) notice.classList.add('visible');
+      }, 1500);
+    }
+  },
+
+  bindPrivacyEvents() {
+    const { closePrivacyNotice, acceptPrivacyBtn, learnMoreBtn, privacyNotice } = this.elements;
+
+    const closeNotice = () => {
+      if (privacyNotice) privacyNotice.classList.remove('visible');
+    };
+
+    const acceptNotice = () => {
+      localStorage.setItem('privacy-notice-accepted', 'true');
+      closeNotice();
+    };
+
+    closePrivacyNotice?.addEventListener('click', closeNotice);
+    acceptPrivacyBtn?.addEventListener('click', acceptNotice);
+    learnMoreBtn?.addEventListener('click', () => {
+      window.open('https://en.wikipedia.org/wiki/Privacy_policy', '_blank');
+    });
+  },
+
+  // ============================================================
+  // TOAST SYSTEM
+  // ============================================================
+  showToast(message, type = 'info') {
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toastMessage');
+    if (!toast || !toastMessage) return;
+    
+    toast.className = `toast ${type}`;
+    toastMessage.textContent = message;
+    toast.classList.add('visible');
+    
+    clearTimeout(this._toastTimeout);
+    this._toastTimeout = setTimeout(() => {
+      toast.classList.remove('visible');
+    }, 4000);
+  }
+};
