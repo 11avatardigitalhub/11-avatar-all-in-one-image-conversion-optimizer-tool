@@ -1,25 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>11 Avatar  - All in One Image Conversion & Optimizer Tool</title>
+    <meta name="theme-color" content="#f5f7fa">
+    <title>11 Avatar - All in One Image Conversion & Optimizer Tool</title>
+    
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-	<link rel="stylesheet" href="assets/css/style.css">
-	<script src="assets/js/script.js"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
    <div class="container">
         <div class="header">
-            <h1>11 Avatar  - All in One Image Conversion & Optimizer</h1>
+            <h1>11 Avatar - All in One Image Conversion & Optimizer</h1>
             <p>Advanced batch image processing with advanced optimization, enhancement, and conversion tools</p>
         </div>
-        <div class="option-item">
-                        <label for="darkModeToggle">Dark Mode</label>
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="darkModeToggle">
-                            <span class="slider"></span>
-                        </label>
-                    </div>
+        
+        <!-- THEME TOGGLE WILL BE INSERTED HERE BY JAVASCRIPT -->
+        
         <div class="tool-container">
             <div class="upload-section" id="dropArea">
                 <i class="fas fa-cloud-upload-alt upload-icon"></i>
@@ -30,7 +31,7 @@
                         <span class="file-counter" id="fileCounter" style="display: none;">0</span>
                     </button>
                 </div>
-				
+                
                 <input type="file" id="fileInput" class="file-input" multiple accept="image/*">
                 <p class="supported-formats">
                     <span class="format-tag">JPG</span>
@@ -45,22 +46,23 @@
                     <span class="format-tag">RAW</span>
                 </p>
             </div>
-                    <label for="stats" class="select-label">Realtime Stats:</label>
-                <div class="real-time-stats">
-                    <div class="stat-item">
-                        <i class="fas fa-images"></i>
-                        <span id="totalFilesStat">0</span> files
-                    </div>
-                    <div class="stat-item">
-                        <i class="fas fa-database"></i>
-                        <span id="totalSizeStat">0 MB</span>
-                    </div>
-                    <div class="stat-item">
-                        <i class="fas fa-clock"></i>
-                        <span id="estimatedTimeStat">0s</span>
-                    </div>
+            
+            <label for="stats" class="select-label">Realtime Stats:</label>
+            <div class="real-time-stats">
+                <div class="stat-item">
+                    <i class="fas fa-images"></i>
+                    <span id="totalFilesStat">0</span> files
                 </div>
-                
+                <div class="stat-item">
+                    <i class="fas fa-database"></i>
+                    <span id="totalSizeStat">0 MB</span>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-clock"></i>
+                    <span id="estimatedTimeStat">0s</span>
+                </div>
+            </div>
+            
             <div class="options-section">
                 <div class="option-card">
                     <label for="outputFormat" class="select-label">Output Format:</label>
@@ -77,6 +79,7 @@
                         <option value="raw">RAW</option>
                     </select>
                 </div>  
+                
                 <div class="option-card">
                     <label for="rotation" class="select-label">Rotation:</label>
                     <select id="rotation" class="format-select">
@@ -91,6 +94,7 @@
                     <label for="batchRename" class="select-label">Batch Rename:</label>
                     <input type="text" id="batchRename" class="rename-input" placeholder="New Pattern (e.g. photo_{num})">
                 </div>
+                
                 <div class="option-card">
                     <label for="imageFilter" class="select-label">Image Filter:</label>
                     <select id="imageFilter" class="format-select">
@@ -127,7 +131,7 @@
                     <div class="resize-dimensions" id="dimensionsContainer">
                         <div class="dimension-input">
                             <label>Width (px)</label>
-                            <input  class="imgsize-setting"type="number" id="resizeWidth" placeholder="Width" min="1" disabled>
+                            <input class="imgsize-setting" type="number" id="resizeWidth" placeholder="Width" min="1" disabled>
                         </div>
                         <div class="dimension-input">
                             <label>Height (px)</label>
@@ -136,6 +140,7 @@
                     </div>
                 </div>
             </div>
+            
             <div class="advanced-options" id="advancedOptions">
                 <div class="advanced-title">
                     <h3><i class="fas fa-cog"></i> Advanced Options</h3>
@@ -222,15 +227,20 @@
                     </div>
                 </div>
             </div>
+            
             <button class="process-btn" id="processBtn" disabled>
                 <i class="fas fa-magic"></i> Process Images
             </button>
+            
             <div class="table-container">
-			<div class="search-container" id="searchContainer" style="display: none;">
-			<label for="searchInput" class="select-label">Search Images:</label>
-			<div style="position: relative;">
-				<input type="text" id="searchInput" class="search-input" placeholder="Search by filename...">
-			</div>
+                <div class="search-container" id="searchContainer" style="display: none;">
+                    <label for="searchInput" class="select-label">Search Images:</label>
+                    <div style="position: relative;">
+                        <input type="text" id="searchInput" class="search-input" placeholder="Search by filename...">
+                        <i class="fas fa-search search-icon"></i>
+                    </div>
+                </div>
+                
                 <table class="images-table" id="imagesTable">
                     <thead>
                         <tr>
@@ -293,64 +303,64 @@
         </div>
 
         <!-- Features Section -->
-       <div class="features-section">
-    <div class="features-container">
-        <div class="section-title">
-            <h2>Why Choose BatchPixel  Media Conversion Suite?</h2>
-            <p>Discover the powerful features that make our image converter stand out from the rest</p>
+        <div class="features-section">
+            <div class="features-container">
+                <div class="section-title">
+                    <h2>Why Choose BatchPixel Media Conversion Suite?</h2>
+                    <p>Discover the powerful features that make our image converter stand out from the rest</p>
+                </div>
+                
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-tachometer-alt"></i>
+                        </div>
+                        <h3>Lightning Fast</h3>
+                        <p>Process hundreds of images in seconds with our optimized conversion engine and AI acceleration.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-user-shield"></i>
+                        </div>
+                        <h3>Privacy Focused</h3>
+                        <p>All processing happens in your browser - your images never leave your device.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-sliders"></i>
+                        </div>
+                        <h3>Advanced Controls</h3>
+                        <p>Fine-tune every aspect of your images with our comprehensive adjustment options.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-th-large"></i>
+                        </div>
+                        <h3>Batch Processing</h3>
+                        <p>Convert, resize, and enhance multiple images at once with just a few clicks.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-brain"></i>
+                        </div>
+                        <h3>Advanced</h3>
+                        <p>Our advanced media conversion tool automatically enhance your images for best results.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-file-image"></i>
+                        </div>
+                        <h3>Multiple Formats</h3>
+                        <p>Convert between all popular image formats while preserving quality.</p>
+                    </div>
+                </div>
+            </div>
         </div>
-        
-        <div class="features-grid">
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <i class="fas fa-tachometer-alt"></i>
-                </div>
-                <h3>Lightning Fast</h3>
-                <p>Process hundreds of images in seconds with our optimized conversion engine and AI acceleration.</p>
-            </div>
-
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <i class="fas fa-user-shield"></i>
-                </div>
-                <h3>Privacy Focused</h3>
-                <p>All processing happens in your browser - your images never leave your device.</p>
-            </div>
-
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <i class="fas fa-sliders"></i>
-                </div>
-                <h3>Advanced Controls</h3>
-                <p>Fine-tune every aspect of your images with our comprehensive adjustment options.</p>
-            </div>
-
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <i class="fas fa-th-large"></i>
-                </div>
-                <h3>Batch Processing</h3>
-                <p>Convert, resize, and enhance multiple images at once with just a few clicks.</p>
-            </div>
-
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <i class="fas fa-brain"></i>
-                </div>
-                <h3>Advanceed</h3>
-                <p>Our advance media conversion tool automatically enhance your images for best results.</p>
-            </div>
-
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <i class="fas fa-file-image"></i>
-                </div>
-                <h3>Multiple Formats</h3>
-                <p>Convert between all popular image formats while preserving quality.</p>
-            </div>
-        </div>
-    </div>
-</div>
         
         <!-- Testimonials Section -->
         <div class="testimonials-section">
@@ -366,7 +376,7 @@
                             This is hands down the best image converter I've ever used. The batch processing saves me hours every week!
                         </div>
                         <div class="testimonial-author">
-                            <alt="Ramesh J.">
+                            <div class="author-avatar">RJ</div>
                             <div class="author-info">
                                 <h4>Ramesh J.</h4>
                                 <p>Photographer</p>
@@ -386,7 +396,7 @@
                             The AI enhancement features are incredible. My product photos look professional with zero effort.
                         </div>
                         <div class="testimonial-author">
-                            <alt="Subhash T.">
+                            <div class="author-avatar">ST</div>
                             <div class="author-info">
                                 <h4>Subhash T.</h4>
                                 <p>E-commerce Store Owner</p>
@@ -406,7 +416,7 @@
                             As a blogger, I need to optimize hundreds of images. This tool has cut my workflow time in half!
                         </div>
                         <div class="testimonial-author">
-                            <alt="Lalita M.">
+                            <div class="author-avatar">LM</div>
                             <div class="author-info">
                                 <h4>Lalita M.</h4>
                                 <p>Content Creator</p>
@@ -473,8 +483,12 @@
         <i class="fas fa-check-circle"></i>
         <span id="toastMessage">Operation completed successfully</span>
     </div>
-    <!-- Include JSZip library for ZIP functionality -->
+    
+    <!-- JS Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>   
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script src="assets/js/script.js"></script>
 </body>
 </html>
